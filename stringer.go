@@ -55,6 +55,8 @@ var (
 	transformMethod = flag.String("transform", "noop", "enum item name transformation method. Default: noop")
 	trimPrefix      = flag.String("trimprefix", "", "transform each item name by removing a prefix or comma separated list of prefixes. Default: \"\"")
 	addPrefix       = flag.String("addprefix", "", "transform each item name by adding a prefix. Default: \"\"")
+	trimSuffix      = flag.String("trimsuffix", "", "transform each item name by removing a suffix. Default: \"\"")
+	addSuffix       = flag.String("addsuffix", "", "transform each item name by adding a suffix. Default: \"\"")
 	linecomment     = flag.Bool("linecomment", false, "use line comment text as printed text when present")
 )
 
@@ -135,7 +137,7 @@ func main() {
 
 	// Run generate for each type.
 	for _, typeName := range typs {
-		g.generate(typeName, *json, *yaml, *sql, *text, *gqlgen, *transformMethod, *trimPrefix, *addPrefix, *linecomment, *altValuesFunc)
+		g.generate(typeName, *json, *yaml, *sql, *text, *gqlgen, *transformMethod, *trimPrefix, *addPrefix, *trimSuffix, *addSuffix, *linecomment, *altValuesFunc)
 	}
 
 	// Format the output.
@@ -398,24 +400,37 @@ func (g *Generator) transformValueNames(values []Value, transformMethod string) 
 	}
 }
 
-// trimValueNames removes a prefix from each name
-func (g *Generator) trimValueNames(values []Value, prefix string) {
+// trimPrefixValueNames removes a prefix from each name
+func (g *Generator) trimPrefixValueNames(values []Value, prefix string) {
 	for i := range values {
 		values[i].name = strings.TrimPrefix(values[i].name, prefix)
 	}
 }
 
-// prefixValueNames adds a prefix to each name
-func (g *Generator) prefixValueNames(values []Value, prefix string) {
+// addPrefixValueNames adds a prefix to each name
+func (g *Generator) addPrefixValueNames(values []Value, prefix string) {
 	for i := range values {
 		values[i].name = prefix + values[i].name
+	}
+}
+
+func (g *Generator) trimSuffixValueNames(values []Value, suffix string) {
+	for i := range values {
+		values[i].name = strings.TrimSuffix(values[i].name, suffix)
+	}
+}
+
+func (g *Generator) addSuffixValueNames(values []Value, suffix string) {
+	for i := range values {
+		values[i].name = values[i].name + suffix
 	}
 }
 
 // generate produces the String method for the named type.
 func (g *Generator) generate(typeName string,
 	includeJSON, includeYAML, includeSQL, includeText, includeGQLGen bool,
-	transformMethod string, trimPrefix string, addPrefix string, lineComment bool, includeValuesMethod bool) {
+	transformMethod, trimPrefix, addPrefix, trimSuffix, addSuffix string,
+	lineComment, includeValuesMethod bool) {
 	values := make([]Value, 0, 100)
 	for _, file := range g.pkg.files {
 		file.lineComment = lineComment
@@ -433,12 +448,16 @@ func (g *Generator) generate(typeName string,
 	}
 
 	for _, prefix := range strings.Split(trimPrefix, ",") {
-		g.trimValueNames(values, prefix)
+		g.trimPrefixValueNames(values, prefix)
+	}
+	for _, suffix := range strings.Split(addSuffix, ",") {
+		g.addSuffixValueNames(values, suffix)
 	}
 
 	g.transformValueNames(values, transformMethod)
 
-	g.prefixValueNames(values, addPrefix)
+	g.addPrefixValueNames(values, addPrefix)
+	g.addSuffixValueNames(values, addSuffix)
 
 	runs := splitIntoRuns(values)
 	// The decision of which pattern to use depends on the number of
