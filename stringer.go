@@ -450,8 +450,8 @@ func (g *Generator) generate(typeName string,
 	for _, prefix := range strings.Split(trimPrefix, ",") {
 		g.trimPrefixValueNames(values, prefix)
 	}
-	for _, suffix := range strings.Split(addSuffix, ",") {
-		g.addSuffixValueNames(values, suffix)
+	for _, suffix := range strings.Split(trimSuffix, ",") {
+		g.trimSuffixValueNames(values, suffix)
 	}
 
 	g.transformValueNames(values, transformMethod)
